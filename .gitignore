@@ -1,0 +1,30 @@
+# ---- Python ----
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.log
+.env
+.env.*
+venv/
+env/
+.venv/
+memory.md 
+
+# ---- Django ----
+media/*
+!media/.gitkeep
+staticfiles/
+db.sqlite3
+# data.json
+
+
+# ---- IDE / OS ----
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+
+
