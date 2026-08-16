@@ -1,10 +1,12 @@
+# fuel_api/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.core.cache import cache
 from fuel_api.services import RouteService
-from fuel_api.serializers import RouteRequestSerializer, RouteResponseSerializer
+from fuel_api.serializers import RouteRequestSerializer
 import logging
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +23,12 @@ class RouteView(APIView):
         finish = serializer.validated_data['finish']
         
         try:
-            # Generate cache key
-            cache_key = f"route_response_{start}_{finish}"
-            cached_response = cache.get(cache_key)
+            # Create clean cache key
+            clean_start = re.sub(r'[^a-zA-Z0-9_]', '_', start)
+            clean_finish = re.sub(r'[^a-zA-Z0-9_]', '_', finish)
+            cache_key = f"route_response_{clean_start}_{clean_finish}"
             
+            cached_response = cache.get(cache_key)
             if cached_response:
                 return Response(cached_response, status=status.HTTP_200_OK)
             
@@ -53,15 +57,15 @@ class RouteView(APIView):
                         'longitude': route_data['finish_coords'][1]
                     }
                 },
-                'total_distance_miles': route_data['distance_miles'],
+                'total_distance_miles': round(route_data['distance_miles'], 2),
                 'fuel_stops': [
                     {
-                        'name': station.truckstop_name,
-                        'address': f"{station.address}, {station.city}, {station.state}",
-                        'price_per_gallon': float(station.retail_price),
+                        'name': station['truckstop_name'],
+                        'address': f"{station['address']}, {station['city']}, {station['state']}",
+                        'price_per_gallon': round(float(station['retail_price']), 2),
                         'coordinates': {
-                            'latitude': float(station.latitude),
-                            'longitude': float(station.longitude)
+                            'latitude': float(station['latitude']),
+                            'longitude': float(station['longitude'])
                         }
                     } for station in fuel_stops
                 ],
@@ -77,7 +81,8 @@ class RouteView(APIView):
                     'vehicle_range_miles': route_service.vehicle_range,
                     'miles_per_gallon': route_service.mpg,
                     'estimated_gallons_needed': round(route_data['distance_miles'] / route_service.mpg, 2),
-                    'number_of_fuel_stops': len(fuel_stops)
+                    'number_of_fuel_stops': len(fuel_stops),
+                    'total_fuel_stations_loaded': len(route_service.fuel_stations)  # Add this to debug
                 }
             }
             
@@ -92,3 +97,16 @@ class RouteView(APIView):
                 {'error': f'Failed to calculate route: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+# Add a debug endpoint to check fuel stations
+class FuelStationsView(APIView):
+    """Debug endpoint to check loaded fuel stations"""
+    
+    def get(self, request):
+        route_service = RouteService()
+        return Response({
+            'total_stations': len(route_service.fuel_stations),
+            'sample_stations': route_service.fuel_stations[:5] if route_service.fuel_stations else [],
+            'csv_path': 'data folder (check logs for details)'
+        })
