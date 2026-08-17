@@ -20,18 +20,23 @@ An API that calculates optimal fuel stops along a route based on fuel prices and
    source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. Install dependencies:
+    ```bash
     pip install -r requirements.txt
 
 4. Create .env file with your API keys:
+    ```bash
     DJANGO_SECRET_KEY=your-secret-key
     OPENCAGE_API_KEY=your-opencage-api-key
 
 5. Run migrations:
+    ```bash
     python manage.py makemigrations
     python manage.py migrate
 
 6. Import fuel station data:
+    ```bash
     python manage.py import_fuel_data path/to/fuel_prices.csv
 
 7. Start the server:
+    ```bash
     python manage.py runserver
